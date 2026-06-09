@@ -159,7 +159,7 @@ describe("SkillChainMY", function () {
             ).to.be.revertedWith(
                 "Cannot issue to zero address"
             );
-        });
+        }); 
 
         it("Should handle duplicate entries (allow student to hold multiple credentials)", async function () {
             // Issue first credential
@@ -172,8 +172,11 @@ describe("SkillChainMY", function () {
             expect(await skillChain.balanceOf(await student.getAddress())).to.equal(2);
 
             // Verify the second token has the correct data
-            const credential = await skillChain.credentials(1); // Token ID 1
-            expect(credential.ipfsCID).to.equal("QmCID_Second");
+            const credential = await skillChain.credentials(0); 
+            expect(credential.ipfsCID).to.equal("QmCID_First");
+
+            const credential1 = await skillChain.credentials(1); 
+            expect(credential1.ipfsCID).to.equal("QmCID_Second");
         });
 
         // REQUIRE TEST 2
@@ -268,6 +271,23 @@ describe("SkillChainMY", function () {
             ).to.equal(false);
         });
 
+        it("Should revoke access after duration expires (Time Travel)", async function () {
+            const hash = ethers.keccak256(ethers.toUtf8Bytes("secret"));
+            const durationInDays = 7;
+
+            // 1. Grant access
+            await skillChain.connect(student).grantRecruiterAccess(hash, durationInDays);
+
+            // 2. Fast-forward the blockchain by 8 days (in seconds)
+            const eightDaysInSeconds = 8 * 24 * 60 * 60;
+            await networkHelpers.time.increase(eightDaysInSeconds);
+
+            // 3. Verify access is now denied
+            expect(
+                await skillChain.verifyRecruiterAccess(await student.getAddress(), hash)
+            ).to.equal(false);
+        });
+
     });
 
     // =====================================================
@@ -305,42 +325,67 @@ describe("SkillChainMY", function () {
             );
         });
 
+        it("Should prevent safeTransferFrom", async function () {
+            await expect(
+                skillChain
+                    .connect(student)
+                    ["safeTransferFrom(address,address,uint256)"](
+                        await student.getAddress(),
+                        await recruiter.getAddress(),
+                        0
+                    )
+            ).to.be.revertedWith(
+                "SkillChainMY: Credentials are Soulbound and cannot be transferred"
+            );
+        });
+
     });
 
     // =====================================================
     // STRESS / INTEGRATION
     // =====================================================
 
-    describe("Multiple User Interaction", function () {
+    describe("Stress Testing & Throughput", function () {
+        it("Should handle concurrent transactions and measure tx/sec", async function () {
+            // 1. Simulate multiple accounts (accounts 1 through 10)
+            const signers = await ethers.getSigners();
+            await skillChain.addIssuer(await issuer.getAddress());
 
-        it("Should issue multiple credentials to different students", async function () {
+            const txPromises = [];
+            const numTxs = 19; // max only able to 19 acc, acc[0] is for developer
 
-            const { ethers } =
-                await hre.network.create();
+            // Start the stopwatch!
+            const startTime = Date.now();
 
-            const signers =
-                await ethers.getSigners();
-
-            await skillChain.addIssuer(
-                await issuer.getAddress()
-            );
-
-            for (let i = 1; i <= 5; i++) {
-
-                await skillChain
+            // 2. Test concurrent transactions
+            for (let i = 1; i <= numTxs; i++) {
+                const tx = skillChain
                     .connect(issuer)
                     .issueCredential(
                         await signers[i].getAddress(),
-                        `CID${i}`
+                        `CID_STRESS_${i}`
                     );
+                txPromises.push(tx);
             }
 
-            expect(
-                await skillChain.ownerOf(4)
-            ).to.equal(
-                await signers[5].getAddress()
-            );
-        });
+            const txResponses = await Promise.all(txPromises);
+            await Promise.all(txResponses.map(tx => tx.wait()));
 
+            const endTime = Date.now();
+            const durationInSeconds = (endTime - startTime) / 1000;
+
+            // 3. Measure transaction throughput (tx/sec)
+            const txPerSec = numTxs / durationInSeconds;
+            
+            console.log(`\n[Stress Test Result] Throughput: ${txPerSec.toFixed(2)} tx/sec (${numTxs} txs in ${durationInSeconds} seconds)`);
+
+            for (let i = 1; i <= numTxs; i++) {
+                const address = await signers[i].getAddress();
+                const balance = await skillChain.balanceOf(address);
+                
+                // Adding a custom error message to the expect statement helps 
+                // pinpoint exactly WHICH transaction failed if the test breaks.
+                expect(balance).to.equal(1, `Failed at signer index ${i}`);
+        }});
     });
 });
