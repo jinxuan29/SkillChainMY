@@ -1,0 +1,103 @@
+{
+  "contracts": {
+    "contracts/SkillChainMY.sol:SkillChainMY": {
+      "sourceName": "contracts/SkillChainMY.sol",
+      "contractName": "SkillChainMY",
+      "proxyChain": [],
+      "deployment": {
+        "min": 2922145,
+        "max": 2922145,
+        "avg": 2922145,
+        "median": 2922145,
+        "count": 18,
+        "runtimeSize": 12792
+      },
+      "functions": {
+        "addIssuer": {
+          "min": 51915,
+          "max": 51915,
+          "avg": 51915,
+          "median": 51915,
+          "count": 10
+        },
+        "balanceOf": {
+          "min": 24306,
+          "max": 24306,
+          "avg": 24306,
+          "median": 24306,
+          "count": 1
+        },
+        "credentials": {
+          "min": 27539,
+          "max": 27551,
+          "avg": 27545,
+          "median": 27545,
+          "count": 2
+        },
+        "DEFAULT_ADMIN_ROLE": {
+          "min": 21438,
+          "max": 21438,
+          "avg": 21438,
+          "median": 21438,
+          "count": 1
+        },
+        "grantRecruiterAccess": {
+          "min": 45097,
+          "max": 45097,
+          "avg": 45097,
+          "median": 45097,
+          "count": 3
+        },
+        "hasRole": {
+          "min": 24792,
+          "max": 25176,
+          "avg": 24984,
+          "median": 24984,
+          "count": 2
+        },
+        "issueCredential": {
+          "min": 111760,
+          "max": 145948,
+          "avg": 136348,
+          "median": 143376,
+          "count": 11
+        },
+        "ISSUER_ROLE": {
+          "min": 21434,
+          "max": 21434,
+          "avg": 21434,
+          "median": 21434,
+          "count": 1
+        },
+        "name": {
+          "min": 24438,
+          "max": 24438,
+          "avg": 24438,
+          "median": 24438,
+          "count": 1
+        },
+        "ownerOf": {
+          "min": 24285,
+          "max": 24297,
+          "avg": 24291,
+          "median": 24291,
+          "count": 2
+        },
+        "symbol": {
+          "min": 24526,
+          "max": 24526,
+          "avg": 24526,
+          "median": 24526,
+          "count": 1
+        },
+        "verifyRecruiterAccess": {
+          "min": 25102,
+          "max": 25113,
+          "avg": 25106,
+          "median": 25102,
+          "count": 3
+        }
+      }
+    }
+  }
+}
