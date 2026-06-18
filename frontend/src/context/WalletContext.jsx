@@ -13,7 +13,6 @@ export const WalletProvider = ({ children }) => {
   // Lazily initialize the read-only contract perfectly without useEffect
   const [readOnlyContract] = useState(() => {
     try {
-      // --- ENVIRONMENT SWITCHER ---
       const environment = import.meta.env.VITE_APP_ENV;
       const rpcUrl = environment === "live" 
         ? import.meta.env.VITE_SEPOLIA_RPC 
@@ -32,13 +31,12 @@ export const WalletProvider = ({ children }) => {
   const checkUserRole = async (userAddress, activeContract) => {
     try {
       const ISSUER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("ISSUER_ROLE"));
-      const ADMIN_ROLE = ethers.ZeroHash; // This is the DEFAULT_ADMIN_ROLE in OpenZeppelin
+      const ADMIN_ROLE = ethers.ZeroHash; // DEFAULT_ADMIN_ROLE in OpenZeppelin
 
       // Check the blockchain for the user's roles
       const isAdmin = await activeContract.hasRole(ADMIN_ROLE, userAddress);
       const isIssuer = await activeContract.hasRole(ISSUER_ROLE, userAddress);
 
-      // Assign the highest privilege role for the UI
       if (isAdmin) {
         setRole("admin");
       } else if (isIssuer) {
@@ -56,29 +54,31 @@ export const WalletProvider = ({ children }) => {
     if (!window.ethereum) return alert("Please install MetaMask!");
     try {
       const network = await window.ethereum.request({ method: 'eth_chainId' });
-      const sepoliaChainId = '0xaa36a7'; // Sepolia's official ID
+      const sepoliaChainId = '0xaa36a7'; 
       
       if (network !== sepoliaChainId) {
         alert("You are on the wrong network! Please switch MetaMask to Sepolia.");
-        return; // Stop the code from crashing
+        return; 
       }
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const activeContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      console.log(signer);
-      const ADMIN_ROLE = ethers.ZeroHash;
-      console.log(await activeContract.hasRole(ADMIN_ROLE, "0xDa082186D3b3cDd17fD212C05653c69E68E46964"));
 
       setAccount(accounts[0]);
       setContract(activeContract);
       await checkUserRole(accounts[0], activeContract);
     } catch (err) {
       console.error(err);
+      // USER READABLE ERROR HANDLING FOR CONNECTION
+      if (err.code === 4001 || err.code === "ACTION_REJECTED") {
+        alert("Wallet connection was cancelled by the user.");
+      } else {
+        alert("Failed to connect wallet. Ensure MetaMask is unlocked.");
+      }
     }
   };
 
-  // Listen for account switching in MetaMask
   useEffect(() => {
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", async (accounts) => {
